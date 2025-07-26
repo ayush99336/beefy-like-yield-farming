@@ -18,24 +18,24 @@ import logger from './logger.js';
 // --- Configuration Defaults ---
 export const defaultConfig = {
   // Phase 1 - Pool Detection Criteria
-  minAPY: 50,
-  minTVL: 100_000,
-  minRewardAPY: 20,
-  minRewardAPYRatio: 0.5,
-  newPoolAgeDays: 7,
-  highAPYThreshold: 200,
-  mediumAPYThreshold: 80,
-  lowTVLThreshold: 500_000,
-  highRewardRatioThreshold: 0.8,
-  tvlGrowthPctThreshold: 50,
+  minAPY: 50,                   // minimum total APY to consider
+  minTVL: 100_000,              // minimum TVL (USD) to consider
+  minRewardAPY: 20,             // minimum absolute reward APY
+  minRewardAPYRatio: 0.5,       // reward APY must be >= 50% of total APY
+  newPoolAgeDays: 7,            // pool age (days) threshold for "new"
+  highAPYThreshold: 200,        // APY above this is flagged as new/very high
+  mediumAPYThreshold: 80,       // medium APY threshold for combined checks
+  lowTVLThreshold: 500_000,     // TVL below this with medium APY flags new
+  highRewardRatioThreshold: 0.8,// reward ratio threshold for new incentive
+  tvlGrowthPctThreshold: 50,    // 1d TVL growth percentage threshold for new
 
   // Phase 2 - Risk & Analysis Criteria
-  volatilitySigmaThreshold: 2,
-  maxRiskScore: 5,
+  volatilitySigmaThreshold: 2,  // sigma above this adds risk
+  maxRiskScore: 5,              // maximum acceptable risk score (0–10)
 
   // Phase 3 - Selection/Diversification
-  maxPerToken: 2,
-  maxTotal: 10
+  maxPerToken: 2,               // max pools to pick per reward token
+  maxTotal: 10                  // max pools to select overall
 };
 
 // --- Sample Stats Object for Profit Calculation ---
@@ -48,11 +48,20 @@ export const sampleStats = {
 
 // --- Phase 1: Data Fetching & Validation ---
 
+/**
+ * Fetches all pools data from DeFiLlama API.
+ * @returns {Promise<Array>} Array of pool objects.
+ */
 export async function fetchAllLlamaPools() {
   const response = await axios.get('https://yields.llama.fi/pools');
   return response.data.data;
 }
 
+/**
+ * Fetches newly launched incentive-driven pools by analyzing DeFiLlama data for recent entries.
+ * @param {Object} config - Strategy configuration.
+ * @returns {Promise<Array>} Array of prioritized pools.
+ */
 export async function fetchNewIncentivePools(config = defaultConfig) {
   logger.info('Fetching DeFiLlama data to detect new incentive-driven opportunities...');
   const allPools = await fetchAllLlamaPools();
@@ -77,23 +86,27 @@ export async function fetchNewIncentivePools(config = defaultConfig) {
     const apyReward = pool.apyReward || 0;
     const rewardRatio = apyReward / Math.max(pool.apy, 1);
 
+    // 1. Age indicator
     if (pool.firstSeenAt) {
       const ageDays = (Date.now() - new Date(pool.firstSeenAt).getTime()) / 86400000;
       if (ageDays < config.newPoolAgeDays) isNew = true;
     }
+    // 2. Very high APY
     if (pool.apy > config.highAPYThreshold) isNew = true;
+    // 3. Low TVL + medium APY
     if (pool.tvlUsd < config.lowTVLThreshold && pool.apy > config.mediumAPYThreshold) isNew = true;
+    // 4. High reward ratio
     if (rewardRatio > config.highRewardRatioThreshold && pool.apy > config.mediumAPYThreshold) isNew = true;
+    // 5. Rapid TVL growth
     if (pool.tvlGrowthPct1d && pool.tvlGrowthPct1d > config.tvlGrowthPctThreshold) isNew = true;
+    // 6. Keyword indicators
     const keywords = ['new', 'launch', 'genesis', 'fresh'];
     if (keywords.some(k => pool.project?.toLowerCase().includes(k) || pool.symbol?.toLowerCase().includes(k))) {
       isNew = true;
     }
 
-    // normalize rewardTokens to array
     const rewardTokens = Array.isArray(pool.rewardTokens) ? pool.rewardTokens : [];
     const record = { ...pool, isNew, rewardRatio, rewardTokens };
-
     (isNew ? newPools : established).push(record);
   });
 
@@ -103,8 +116,14 @@ export async function fetchNewIncentivePools(config = defaultConfig) {
   ];
 }
 
+/**
+ * Validates new pools against full DeFiLlama data and config criteria.
+ * @param {Array} detectedPools
+ * @param {Array} allPools
+ * @param {Object} config
+ * @returns {Array} validatedPools
+ */
 export function validateAndFilterNewPools(detectedPools, allPools, config = defaultConfig) {
-  logger.info(`Validating ${detectedPools.length} detected pools...`);
   const map = new Map(allPools.map(p => [p.pool, p]));
   const result = [];
 
@@ -127,11 +146,14 @@ export function validateAndFilterNewPools(detectedPools, allPools, config = defa
 
 // --- Phase 2: Analysis Functions ---
 
+/**
+ * Calculates a composite risk score (0–10).
+ */
 export function calculateRiskScore(pool, config = defaultConfig) {
   let risk = 0;
   if (pool.apy > 100) risk += 3;
   if (pool.tvlUsd < 100_000) risk += 2;
-  if (( (pool.apyReward||0) / Math.max(pool.apy, 1) ) > config.highRewardRatioThreshold) risk += 2;
+  if (((pool.apyReward||0) / Math.max(pool.apy, 1)) > config.highRewardRatioThreshold) risk += 2;
   if (pool.exposure !== 'single') risk += 1;
   if (pool.predictions?.predictedClass === 'Down') risk += 2;
   if (pool.ilRisk === 'yes') risk += 1;
@@ -139,6 +161,9 @@ export function calculateRiskScore(pool, config = defaultConfig) {
   return Math.min(risk, 10);
 }
 
+/**
+ * Computes profit potential score normalized by stats.
+ */
 export function calculateProfitPotential(pool, stats = sampleStats) {
   const { apyMin, apyMax, tvlMax, volRatioMax } = stats;
   const apy = pool.apy || 0;
@@ -151,7 +176,6 @@ export function calculateProfitPotential(pool, stats = sampleStats) {
 }
 
 export function enrichPoolData(pools, stats = sampleStats, config = defaultConfig) {
-  logger.info(`Enriching ${pools.length} pools with scores...`);
   return pools.map(pool => {
     const risk = calculateRiskScore(pool, config);
     const profit = calculateProfitPotential(pool, stats);
@@ -164,7 +188,6 @@ export function enrichPoolData(pools, stats = sampleStats, config = defaultConfi
 export function selectOptimalPools(enrichedPools, config = defaultConfig) {
   const candidates = enrichedPools.filter(p => p.riskScore <= config.maxRiskScore);
   const byToken = {};
-
   candidates.forEach(p => {
     const tok = p.rewardTokens.length > 0 ? p.rewardTokens[0] : 'none';
     byToken[tok] = byToken[tok] || [];
@@ -179,4 +202,17 @@ export function selectOptimalPools(enrichedPools, config = defaultConfig) {
   return selected
     .sort((a, b) => b.profitPotential - a.profitPotential)
     .slice(0, config.maxTotal);
+}
+
+/**
+ * Fetches a single pool by ID (or address) from DeFiLlama and calculates riskScore.
+ * @param {string} poolId
+ * @returns {Promise<Object|null>}
+ */
+export async function fetchPoolById(poolId) {
+  const allPools = await fetchAllLlamaPools();
+  const pool = allPools.find(p => p.pool === poolId || p.address === poolId);
+  if (!pool) return null;
+  pool.riskScore = calculateRiskScore(pool, defaultConfig);
+  return pool;
 }

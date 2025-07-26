@@ -20,6 +20,7 @@ import {
   selectOptimalPools,
   defaultConfig,
   sampleStats,
+  fetchPoolById
 } from './functional_strategy.js';
 
 // --- Configuration ---
@@ -29,6 +30,8 @@ const HOLD_DURATION_MS     = 24 * 60 * 60 * 1000;  // Hold positions 24h
 const RUN_INTERVAL_MS      = 30 * 60 * 1000;       // Run every 30 minutes
 const MAX_ACTIVE_POSITIONS = 5;
 const MIN_WATCHLIST_AGE_MS = 15 * 60 * 1000;       // Validate watchlist after 15 min
+const MAX_RISK_SCORE       = 7;                    // Risk threshold for exit
+const APY_DROP_THRESHOLD   = 50;                   // APY drop % threshold for early exit
 
 // --- State Management ---
 function loadJsonFile(path, defaultVal) {
@@ -52,20 +55,34 @@ function saveJsonFile(path, data) {
 }
 
 // --- Portfolio Lifecycle ---
-function checkForExits(portfolio) {
+async function checkForExits(portfolio) {
   const now = Date.now();
   const stillActive = [];
 
-  portfolio.active.forEach(pos => {
-    if (now - pos.entryTimestamp >= HOLD_DURATION_MS) {
-      logger.info(`Exiting ${pos.symbol} after 24h hold.`);
+  for (const pos of portfolio.active) {
+    const hoursHeld = (now - pos.entryTimestamp) / (1000 * 60 * 60);
+    const current = await fetchPoolById(pos.poolId);
+    if (!current) {
+      stillActive.push(pos);
+      continue;
+    }
+
+    const apyDrop = ((pos.entryApy - current.apy) / pos.entryApy) * 100;
+    const highRisk = current.riskScore > MAX_RISK_SCORE;
+    const timeExit = now - pos.entryTimestamp >= HOLD_DURATION_MS;
+    const apyExit = apyDrop >= APY_DROP_THRESHOLD;
+
+    if (timeExit || apyExit || highRisk) {
+      const reason = timeExit ? 'time_exit' : apyExit ? 'apy_drop' : 'risk_exit';
+      logger.info(`Exiting ${pos.symbol} | Reason: ${reason} | APY Drop: ${apyDrop.toFixed(1)}% | Risk: ${current.riskScore}`);
       pos.status = 'exited';
       pos.exitTimestamp = now;
+      pos.exitReason = reason;
       portfolio.exited.push(pos);
     } else {
       stillActive.push(pos);
     }
-  });
+  }
 
   portfolio.active = stillActive;
 }
@@ -89,7 +106,6 @@ async function updateWatchlist(watchlist) {
     }
   }
 
-  // Prune older than 7 days
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const before = watchlist.length;
   watchlist = watchlist.filter(p => p.firstSeen > cutoff);
@@ -102,13 +118,8 @@ async function updateWatchlist(watchlist) {
 
 async function investFromWatchlist(portfolio, watchlist) {
   logger.info('Evaluating watchlist for investment...');
-  const slots = MAX_ACTIVE_POSITIONS - portfolio.active.length;
-  if (slots <= 0) {
-    logger.info('No available slots, portfolio is full.');
-    return;
-  }
+  let slots = MAX_ACTIVE_POSITIONS - portfolio.active.length;
 
-  // Filter pools that have aged on watchlist
   const now = Date.now();
   const matured = watchlist.filter(w => now - w.firstSeen >= MIN_WATCHLIST_AGE_MS);
   if (!matured.length) {
@@ -116,7 +127,6 @@ async function investFromWatchlist(portfolio, watchlist) {
     return;
   }
 
-  // Validate & prioritize
   const allPools = await fetchNewIncentivePools(defaultConfig);
   const validated = validateAndFilterNewPools(matured, allPools, defaultConfig);
   if (!validated.length) {
@@ -124,12 +134,27 @@ async function investFromWatchlist(portfolio, watchlist) {
     return;
   }
 
-  // Analyze & select top candidates
   const enriched = enrichPoolData(validated.slice(0, 20), sampleStats, defaultConfig);
-  const optimal  = selectOptimalPools(enriched, defaultConfig).slice(0, slots);
+  const optimal  = selectOptimalPools(enriched, defaultConfig);
 
-  let addedCount = 0;
+  // --- Rebalancing Logic ---
   for (const cand of optimal) {
+    if (portfolio.active.length < MAX_ACTIVE_POSITIONS) break;
+
+    const worst = portfolio.active.reduce((min, p) => p.entryApy < min.entryApy ? p : min, portfolio.active[0]);
+    if (cand.apy > worst.entryApy + 20) {
+      logger.info(`Rebalancing: Replacing ${worst.symbol} (APY ${worst.entryApy}) with ${cand.symbol} (APY ${cand.apy})`);
+      worst.status = 'exited';
+      worst.exitTimestamp = now;
+      worst.exitReason = 'rebalanced';
+      portfolio.exited.push(worst);
+      portfolio.active = portfolio.active.filter(p => p.poolId !== worst.poolId);
+      slots++;
+    }
+  }
+
+  const remaining = optimal.slice(0, slots);
+  for (const cand of remaining) {
     if (!portfolio.active.some(p => p.poolId === cand.pool)) {
       logger.info(`▶ Entering ${cand.symbol} | APY ${cand.apy.toFixed(2)}% | Risk ${cand.riskScore}`);
       portfolio.active.push({
@@ -141,14 +166,7 @@ async function investFromWatchlist(portfolio, watchlist) {
         entryRisk:     cand.riskScore,
         isNew:         cand.isNew,
       });
-      addedCount++;
     }
-  }
-
-  if (addedCount) {
-    logger.info(`Added ${addedCount} new positions.`);
-  } else {
-    logger.info('All top candidates already active.');
   }
 }
 
@@ -159,7 +177,7 @@ async function workflowLoop() {
   const portfolio = loadJsonFile(PORTFOLIO_FILE, { active: [], exited: [] });
   let watchlist = loadJsonFile(WATCHLIST_FILE, []);
 
-  checkForExits(portfolio);
+  await checkForExits(portfolio);
   watchlist = await updateWatchlist(watchlist);
   await investFromWatchlist(portfolio, watchlist);
 
