@@ -11,20 +11,22 @@
  *
  * This provides a more nuanced view of the yield landscape, perfect for analysis.
  *
- * How it Works:
- * 1. Fetches all pool data from the DefiLlama API.
- * 2. Filters for Solana pools that meet the APY and TVL thresholds.
- * 3. Categorizes each qualifying pool as either "Volume-Driven" or "Incentive-Driven".
- * 4. Sorts the pools within each category by total APY.
- * 5. Saves the complete raw data for the top 100 pools to `solana_pools_data.json`.
- * 6. Displays a clean, presentable report in the console with separate tables for each category.
+ * -----------------------------------------------------------------------------------
+ *
+ * To Run This Code:
+ * 1. Make sure you have Node.js installed.
+ * 2. In your project folder, open `package.json` and add the line: "type": "module",
+ * 3. Open a terminal and run `npm install axios`.
+ * 4. Run this script with the command: `node discovery_engine.js`
+ * 5. A new file `solana_pools_data.json` will be created in your folder.
  *
  * ===================================================================================
  */
 
-// We use 'axios' to make API requests and 'fs' (File System) to write files.
-import axios from "axios";
-import fs from 'fs'
+// Use ES Module style imports.
+import axios from 'axios';
+import fs from 'fs';
+
 // --- Configuration ---
 const APY_THRESHOLD = 30; // The minimum total APY we are interested in.
 const MIN_TVL_USD = 50000; // The minimum Total Value Locked to consider a pool.
@@ -34,8 +36,8 @@ const FILE_NAME = 'solana_pools_data.json'; // The name of the output file.
  * The main function to discover, categorize, and display pool data.
  */
 async function analyzePools() {
-    console.log("🚀 Starting Pool Analyzer...");
-    console.log(`🔍 Searching for Solana pools with APY > ${APY_THRESHOLD}% and TVL > $${MIN_TVL_USD.toLocaleString()}...`);
+    console.log("Starting Pool Analyzer...");
+    console.log(`Searching for Solana pools with APY > ${APY_THRESHOLD}% and TVL > $${MIN_TVL_USD.toLocaleString()}...`);
 
     try {
         // 1. FETCH DATA
@@ -50,11 +52,11 @@ async function analyzePools() {
         );
 
         if (highYieldPools.length === 0) {
-            console.log("\n✅ No pools found matching your criteria right now.");
+            console.log("\nNo pools found matching your criteria right now.");
             return;
         }
 
-        console.log(`\n✅ Success! Found ${highYieldPools.length} pools matching your criteria.`);
+        console.log(`\nSuccess! Found ${highYieldPools.length} pools matching your criteria.`);
 
         // 3. CATEGORIZE POOLS
         const volumeDrivenPools = [];
@@ -79,17 +81,17 @@ async function analyzePools() {
         // 5. SAVE RAW DATA TO FILE (Top 100 overall)
         const top100Overall = highYieldPools.sort((a, b) => b.apy - a.apy).slice(0, 100);
         fs.writeFileSync(FILE_NAME, JSON.stringify(top100Overall, null, 2));
-        console.log(`\n💾 Successfully saved raw data for top ${top100Overall.length} pools to ${FILE_NAME}`);
+        console.log(`\nSuccessfully saved raw data for top ${top100Overall.length} pools to ${FILE_NAME}`);
 
         // 6. DISPLAY RESULTS
         displayResults("Volume-Driven Pools (Yield from Trading Fees)", volumeDrivenPools);
         displayResults("Incentive-Driven Pools (Yield from Rewards)", incentiveDrivenPools);
 
     } catch (error) {
-        console.error("\n❌ An error occurred while running the analyzer:");
+        console.error("\nAn error occurred while running the analyzer:");
         console.error(error.message);
     } finally {
-        console.log("\n🏁 Analyzer has finished its run.");
+        console.log("\nAnalyzer has finished its run.");
     }
 }
 
