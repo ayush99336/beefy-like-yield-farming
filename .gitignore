@@ -1,0 +1,57 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+
+
+!package.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+out/
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Misc
+*.tgz
+*.zip
+
+# Blockchain/Hardhat/Truffle
+artifacts/
+cache/
+typechain/
+*.tsbuildinfo
+
+# Ignore test coverage
+coverage/
+.nyc_output/
+
+# Ignore compiled contracts
+*.json
+
+# Ignore Remix files
+remixd-assets/
+
+!package.json
