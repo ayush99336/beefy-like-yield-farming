@@ -86,14 +86,14 @@ coinGeckoApi.interceptors.request.use(
 // Add response interceptor for debugging
 coinGeckoApi.interceptors.response.use(
   (response) => {
-    console.log('✅ Backend Proxy Response:', {
+    console.log(' Backend Proxy Response:', {
       status: response.status,
       data: response.data
     });
     return response;
   },
   (error) => {
-    console.error('❌ Backend Proxy Response Error:', {
+    console.error(' Backend Proxy Response Error:', {
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
@@ -166,7 +166,7 @@ export const priceService = {
     console.log('🔗 Mapped token IDs:', tokenIds);
 
     if (tokenIds.length === 0) {
-      console.warn('❌ No valid token IDs found for symbols:', symbols);
+      console.warn(' No valid token IDs found for symbols:', symbols);
       return {};
     }
 
@@ -183,7 +183,7 @@ export const priceService = {
           }
         });
 
-        console.log('✅ CoinGecko API response:', response.data);
+        console.log(' CoinGecko API response:', response.data);
 
         const prices: { [symbol: string]: number } = {};
         
@@ -192,7 +192,7 @@ export const priceService = {
           if (tokenId && response.data[tokenId]) {
             const price = response.data[tokenId].usd;
             prices[symbol] = price;
-            console.log(`💰 ${symbol} (${tokenId}): $${price}`);
+            console.log(`${symbol} (${tokenId}): $${price}`);
             
             // Cache the price
             priceCache[tokenId] = {
@@ -205,10 +205,10 @@ export const priceService = {
           }
         });
 
-        console.log('📊 Final prices object:', prices);
+        console.log(' Final prices object:', prices);
         return prices;
       } catch (error) {
-        console.error('❌ Failed to fetch multiple token prices:', error);
+        console.error(' Failed to fetch multiple token prices:', error);
         if (axios.isAxiosError(error)) {
           console.error('API Error Response:', error.response?.data);
           console.error('API Error Status:', error.response?.status);

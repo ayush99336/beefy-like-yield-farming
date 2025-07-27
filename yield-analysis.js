@@ -48,7 +48,7 @@ function printHeader(title) {
 }
 
 function printSection(title) {
-  console.log('\n' + colorize(`📊 ${title}`, 'yellow'));
+  console.log('\n' + colorize(` ${title}`, 'yellow'));
   console.log(colorize('-'.repeat(40), 'yellow'));
 }
 
@@ -170,7 +170,7 @@ async function main() {
   try {
     await dbService.connect();
     
-    console.log(colorize('\n🚀 WildNet Yield Farming Analysis', 'bright'));
+    console.log(colorize('\n WildNet Yield Farming Analysis', 'bright'));
     console.log(colorize('Investment Simulation: $1000 per pool\n', 'cyan'));
     
     // Check if we have any data
@@ -188,7 +188,7 @@ async function main() {
     console.log(colorize('💡 Tip: Run this analysis regularly to track your farming performance.', 'cyan'));
     
   } catch (error) {
-    console.error(colorize(`\n❌ Analysis failed: ${error.message}`, 'red'));
+    console.error(colorize(`\n Analysis failed: ${error.message}`, 'red'));
     process.exit(1);
   } finally {
     await dbService.disconnect();

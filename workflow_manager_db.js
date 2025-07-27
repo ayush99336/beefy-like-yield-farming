@@ -90,7 +90,7 @@ async function checkForExits(cycleId) {
     }
 
     if (exitedCount > 0) {
-      logger.info(`✅ Exited ${exitedCount} positions`);
+      logger.info(` Exited ${exitedCount} positions`);
     }
     
     return exitedCount;
@@ -132,12 +132,12 @@ async function updateWatchlist(cycleId) {
     const cleaned = await dbService.cleanOldWatchlistEntries(7);
 
     if (added > 0) {
-      logger.info(`📝 Added ${added} new pools to watchlist`);
+      logger.info(` Added ${added} new pools to watchlist`);
       await dbService.addLog(cycleId, 'info', `Added ${added} new pools to watchlist`);
     }
     
     if (updated > 0) {
-      logger.info(`🔄 Updated ${updated} existing pools in watchlist`);
+      logger.info(` Updated ${updated} existing pools in watchlist`);
       await dbService.addLog(cycleId, 'info', `Updated ${updated} existing pools lastChecked timestamp`);
     }
     
@@ -155,7 +155,7 @@ async function updateWatchlist(cycleId) {
 }
 
 async function investFromWatchlist(cycleId) {
-  logger.info('💰 Evaluating watchlist for investment...');
+  logger.info('Evaluating watchlist for investment...');
   
   try {
     const activePositions = await dbService.getActivePositions();
@@ -180,7 +180,7 @@ async function investFromWatchlist(cycleId) {
     const validated = validateAndFilterNewPools(matured, allPools, defaultConfig);
     
     if (!validated.length) {
-      logger.info('❌ No validated pools meeting criteria.');
+      logger.info(' No validated pools meeting criteria.');
       await dbService.addLog(cycleId, 'info', 'No pools passed validation criteria');
       return 0;
     }
@@ -198,7 +198,7 @@ async function investFromWatchlist(cycleId) {
       );
       
       if (cand.apy > worst.entryApy + 20) { // 20% APY improvement threshold
-        logger.info(`🔄 Rebalancing: Replacing ${worst.symbol} (APY ${worst.entryApy}%) with ${cand.symbol} (APY ${cand.apy}%)`);
+        logger.info(` Rebalancing: Replacing ${worst.symbol} (APY ${worst.entryApy}%) with ${cand.symbol} (APY ${cand.apy}%)`);
         
         // Calculate yield for the position being exited
         const yieldData = yieldCalculator.calculateYield(worst, {
@@ -232,7 +232,7 @@ async function investFromWatchlist(cycleId) {
         // Simulate investment to show projected returns
         const simulation = yieldCalculator.simulateInvestment(cand, 1); // 1 day projection
         
-        logger.info(`🚀 Entering ${cand.symbol} | APY ${cand.apy.toFixed(2)}% | Risk ${cand.riskScore} | ${cand.isNew ? '🆕 NEW' : '📈 EST'} | Daily Est: $${simulation.totalReturn.toFixed(2)}`);
+        logger.info(` Entering ${cand.symbol} | APY ${cand.apy.toFixed(2)}% | Risk ${cand.riskScore} | ${cand.isNew ? '🆕 NEW' : '📈 EST'} | Daily Est: $${simulation.totalReturn.toFixed(2)}`);
         
         await dbService.addPosition(cycleId, {
           poolId: cand.pool,
@@ -264,7 +264,7 @@ async function investFromWatchlist(cycleId) {
     }
     
     if (investedCount > 0) {
-      logger.info(`✅ Made ${investedCount} new investments`);
+      logger.info(` Made ${investedCount} new investments`);
     }
     
     return investedCount;
@@ -308,7 +308,7 @@ async function workflowLoop() {
     });
     
     // Log yield performance
-    logger.info(`💰 Portfolio Performance:`);
+    logger.info(`Portfolio Performance:`);
     logger.info(`   • Total Invested: $${yieldAnalytics.overall.totalInvested}`);
     logger.info(`   • Current Value: $${yieldAnalytics.overall.totalCurrentValue}`);
     logger.info(`   • Total Returns: $${yieldAnalytics.overall.totalReturns} (${yieldAnalytics.overall.portfolioReturnPercentage}%)`);
@@ -317,7 +317,7 @@ async function workflowLoop() {
     
     // Log final cycle summary
     const summary = `Cycle Complete: Active=${activePositions.length}, Watchlist=${watchlist.length}, New=${watchlistStats.added}, Exited=${exitedCount}, Invested=${investedCount}, Duration=${(cycleDuration/1000).toFixed(1)}s, Returns=${yieldAnalytics.overall.portfolioReturnPercentage.toFixed(2)}%`;
-    logger.info(`✨ ${summary}`);
+    logger.info(` ${summary}`);
     
     await dbService.addLog(cycle.id, 'info', 'Cycle completed successfully', {
       activePositions: activePositions.length,
@@ -333,7 +333,7 @@ async function workflowLoop() {
     });
     
   } catch (error) {
-    logger.error(`❌ Workflow error: ${error.message}`);
+    logger.error(` Workflow error: ${error.message}`);
     console.error(error);
   }
 }
@@ -344,8 +344,8 @@ async function startWorkflow() {
     // Connect to database
     await dbService.connect();
     
-    logger.info('\n🚀 Starting Database-Integrated Workflow Manager...');
-    logger.info(`⚙️  Configuration:`);
+    logger.info('\n Starting Database-Integrated Workflow Manager...');
+    logger.info(`Configuration:`);
     logger.info(`   • Interval: ${RUN_INTERVAL_MS/60000} minutes`);
     logger.info(`   • Hold Duration: ${HOLD_DURATION_MS/3600000} hours`);
     logger.info(`   • Max Positions: ${MAX_ACTIVE_POSITIONS}`);
@@ -361,12 +361,12 @@ async function startWorkflow() {
     // Schedule recurring cycles
     setInterval(workflowLoop, RUN_INTERVAL_MS);
     
-    logger.info(`\n✅ Workflow Manager running successfully!`);
-    logger.info(`📊 API Dashboard: http://localhost:3000/api/dashboard`);
-    logger.info(`🏥 Health Check: http://localhost:3000/health`);
+    logger.info(`\n Workflow Manager running successfully!`);
+    logger.info(` API Dashboard: http://localhost:3000/api/dashboard`);
+    logger.info(` Health Check: http://localhost:3000/health`);
     
   } catch (error) {
-    logger.error(`❌ Failed to start workflow: ${error.message}`);
+    logger.error(` Failed to start workflow: ${error.message}`);
     console.error(error);
     process.exit(1);
   }

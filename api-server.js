@@ -131,7 +131,7 @@ app.get('/api/coingecko/prices', async (req, res) => {
     // Check cache first
     const cached = priceCache.get(cacheKey);
     if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-      console.log('💾 Serving from cache:', cacheKey);
+      console.log(' Serving from cache:', cacheKey);
       return res.json(cached.data);
     }
 
@@ -191,7 +191,7 @@ app.get('/api/coingecko/prices', async (req, res) => {
           timestamp: Date.now()
         });
 
-        console.log('✅ CoinGecko API response cached:', Object.keys(data));
+        console.log(' CoinGecko API response cached:', Object.keys(data));
         return data;
 
       } finally {
@@ -207,7 +207,7 @@ app.get('/api/coingecko/prices', async (req, res) => {
     res.json(result);
     
   } catch (error) {
-    console.error('❌ CoinGecko proxy error:', error.message);
+    console.error(' CoinGecko proxy error:', error.message);
     if (error.response) {
       console.error('CoinGecko API Error Details:', {
         status: error.response.status,
@@ -368,11 +368,11 @@ async function startServer() {
     await dbService.connect();
     
     app.listen(PORT, () => {
-      console.log(`🚀 API Server running on port ${PORT}`);
-      console.log(`📊 Dashboard: http://localhost:${PORT}/api/dashboard`);
-      console.log(`❤️  Health: http://localhost:${PORT}/health`);
-      console.log(`📝 Logs: http://localhost:${PORT}/api/logs`);
-      console.log(`💼 Active Positions: http://localhost:${PORT}/api/positions/active`);
+      console.log(` API Server running on port ${PORT}`);
+      console.log(` Dashboard: http://localhost:${PORT}/api/dashboard`);
+      console.log(`  Health: http://localhost:${PORT}/health`);
+      console.log(` Logs: http://localhost:${PORT}/api/logs`);
+      console.log(` Active Positions: http://localhost:${PORT}/api/positions/active`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

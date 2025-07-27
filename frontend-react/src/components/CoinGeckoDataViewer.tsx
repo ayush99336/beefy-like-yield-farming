@@ -92,7 +92,7 @@ const CoinGeckoDataViewer: React.FC = () => {
     setError(null);
     
     try {
-      console.log('🔄 Fetching real-time prices from CoinGecko...');
+      console.log(' Fetching real-time prices from CoinGecko...');
       console.log('🔍 Requesting prices for tokens:', watchlistTokens);
       
       // Fetch all tokens in a single request to minimize API calls
@@ -117,12 +117,12 @@ const CoinGeckoDataViewer: React.FC = () => {
       setTokenPrices(priceData);
       setLastUpdate(new Date());
       
-      console.log('✅ CoinGecko prices processed:', priceData.length, 'tokens');
+      console.log(' CoinGecko prices processed:', priceData.length, 'tokens');
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch token prices';
       setError(errorMessage);
-      console.error('❌ CoinGecko fetch error:', err);
+      console.error(' CoinGecko fetch error:', err);
       
       // Set fallback data
       const fallbackData: TokenPrice[] = watchlistTokens.map(symbol => ({

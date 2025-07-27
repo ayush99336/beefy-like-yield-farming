@@ -4,13 +4,13 @@ A modern React TypeScript frontend for tracking yield farming performance with r
 
 ## Features
 
-### 📊 Real-time Portfolio Analytics
+###  Real-time Portfolio Analytics
 - **Portfolio Value**: Current total value of all positions
 - **Total Returns**: Aggregate P&L with percentage returns  
 - **Win Rate**: Percentage of profitable positions
 - **Average Hold Time**: How long positions are typically held
 
-### 💰 Yield Calculation Engine ($1000 per pool simulation)
+### Yield Calculation Engine ($1000 per pool simulation)
 - **Investment Simulation**: Each pool entry simulates a $1000 investment
 - **Real-time APY Tracking**: Fetches current APY from DeFiLlama API
 - **Compound Interest**: Daily compounding for accurate returns

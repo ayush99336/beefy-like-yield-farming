@@ -1,4 +1,54 @@
-# Strategy Module & Workflow Manager Documentation
+# 🚀 WildNet Yield Farming Bot
+
+**Automated Solana yield farming bot with incentive-driven pool detection and real-time analytics**
+
+## 📖 Quick Start
+
+```bash
+# 1. Setup database and dependencies
+npm run setup
+
+# 2. Start the bot (main service)
+npm start
+
+# 3. Start API server (for dashboard)
+npm run server
+
+# 4. Start React dashboard (for monitoring)
+npm run react-dashboard
+```
+
+## 📚 **Complete Documentation**
+
+**👉 [SCRIPTS_DOCUMENTATION.md](./SCRIPTS_DOCUMENTATION.md)** - Complete guide to all scripts, commands, and architecture
+
+## 🔧 Available Commands
+
+| Command | Purpose | Use Case |
+|---------|---------|----------|
+| `npm start` | Start main bot | Primary bot operation |
+| `npm run server` | Start API server | Backend for dashboard |
+| `npm run react-dashboard` | Start frontend | Web monitoring interface |
+| `npm run analyze` | Yield analysis | Performance review |
+| `npm run setup` | Database setup | First-time initialization |
+
+## 🌐 Access Points
+
+- **React Dashboard**: http://localhost:3001
+- **API Server**: http://localhost:3000
+- **Health Check**: http://localhost:3000/health
+
+## 🏗️ Architecture
+
+- **Main Bot**: `workflow_manager_db.js` - Pool detection & portfolio management
+- **API Server**: `api-server.js` - REST API with CoinGecko proxy
+- **Frontend**: `frontend-react/` - React dashboard with real-time data
+- **Database**: PostgreSQL with Prisma ORM
+- **Strategy**: `functional_strategy.js` - Investment logic & validation
+
+---
+
+# Legacy Documentation - Strategy Module & Workflow Manager
 
 This document summarizes the enhancements and structure of the two key JavaScript files in our short-term (24h) yield farming framework on Solana:
 
@@ -39,7 +89,7 @@ This document summarizes the enhancements and structure of the two key JavaScrip
   * Cross-references watchlist/other detections against full DeFiLlama data.
   * Reapplies `minAPY`, `minTVL`, `minRewardAPY`, and `minRewardAPYRatio` safeguards.
 
-### 📊 Phase 2: Analysis Functions
+###  Phase 2: Analysis Functions
 
 * **`calculateRiskScore(pool, config)`**:
 
@@ -103,7 +153,7 @@ This document summarizes the enhancements and structure of the two key JavaScrip
   5. **Selects** up to `slots` via `selectOptimalPools`.
   6. **Invests**: logs and pushes new positions into `portfolio.active`.
 
-### 🔄 Main Loop
+###  Main Loop
 
 * **`workflowLoop()`**:
 

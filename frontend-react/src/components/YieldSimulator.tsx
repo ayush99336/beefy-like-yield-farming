@@ -54,7 +54,7 @@ const YieldSimulator: React.FC<YieldSimulatorProps> = () => {
     <Card sx={{ mb: 4 }}>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          📊 Yield Simulator ($1000 Investment Strategy)
+           Yield Simulator ($1000 Investment Strategy)
         </Typography>
         
         <Alert severity={riskInfo.severity as any} sx={{ mb: 3 }}>

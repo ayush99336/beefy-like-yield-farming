@@ -62,18 +62,18 @@ export const DB_CONFIG = {
 
 // === Timing Configuration ===
 export const TIMING_CONFIG = {
-  // Workflow cycle interval (30 minutes)
-  cycleIntervalMs: 30 * 60 * 1000,
+  // Workflow cycle interval (15 minutes for intensive farming)
+  cycleIntervalMs: 15 * 60 * 1000,
   
-  // Position hold duration (48 hours)
-  holdDurationMs: 48 * 60 * 60 * 1000,
+  // Position hold duration (24 hours for intensive farming)
+  holdDurationMs: 24 * 60 * 60 * 1000,
   
-  // Watchlist age threshold (15 minutes)
-  watchlistAgeMs: 15 * 60 * 1000,
+  // Watchlist age threshold (10 minutes)
+  watchlistAgeMs: 10 * 60 * 1000,
   
-  // Ultra-fresh pool window (1-4 hours for new pools)
-  newPoolMinAgeHrs: 1,
-  newPoolMaxAgeHrs: 4,
+  // Ultra-fresh pool window (30 minutes - 6 hours for new pools)
+  newPoolMinAgeHrs: 0.5,
+  newPoolMaxAgeHrs: 6,
   
   // API request timeout
   apiTimeoutMs: 10000
@@ -81,32 +81,32 @@ export const TIMING_CONFIG = {
 
 // === Pool Detection Strategy Configuration ===
 export const STRATEGY_CONFIG = {
-  // Phase 1 - Pool Detection Criteria
-  minAPY: 50,                   // minimum total APY to consider
-  minTVL: 100_000,              // minimum TVL (USD) to consider
-  minRewardAPY: 20,             // minimum absolute reward APY
-  minRewardAPYRatio: 0.5,       // reward APY must be >= 50% of total APY
-  newPoolAgeDays: 7,            // pool age (days) threshold for "new"
-  highAPYThreshold: 200,        // APY above this is flagged as new/very high
-  mediumAPYThreshold: 80,       // medium APY threshold for combined checks
-  lowTVLThreshold: 500_000,     // TVL below this with medium APY flags new
-  highRewardRatioThreshold: 0.8,// reward ratio threshold for new incentive
-  tvlGrowthPctThreshold: 50,    // 1d TVL growth percentage threshold for new
+  // Phase 1 - Pool Detection Criteria (Loosened for intensive farming)
+  minAPY: 30,                   // minimum total APY to consider (reduced from 50)
+  minTVL: 50_000,               // minimum TVL (USD) to consider (reduced from 100k)
+  minRewardAPY: 15,             // minimum absolute reward APY (reduced from 20)
+  minRewardAPYRatio: 0.3,       // reward APY must be >= 30% of total APY (reduced from 0.5)
+  newPoolAgeDays: 14,           // pool age (days) threshold for "new" (increased from 7)
+  highAPYThreshold: 300,        // APY above this is flagged as new/very high (reduced from 400)
+  mediumAPYThreshold: 60,       // medium APY threshold for combined checks (reduced from 80)
+  lowTVLThreshold: 800_000,     // TVL below this with medium APY flags new (increased from 500k)
+  highRewardRatioThreshold: 0.7,// reward ratio threshold for new incentive (reduced from 0.8)
+  tvlGrowthPctThreshold: 30,    // 1d TVL growth percentage threshold for new (reduced from 50)
 
-  // Phase 2 - Risk & Analysis Criteria
-  volatilitySigmaThreshold: 2,  // sigma above this adds risk
-  maxRiskScore: 7,              // maximum acceptable risk score (0–10) - increased from 5
+  // Phase 2 - Risk & Analysis Criteria (More aggressive for intensive farming)
+  volatilitySigmaThreshold: 3,  // sigma above this adds risk (increased from 2)
+  maxRiskScore: 8,              // maximum acceptable risk score (0–10) - increased from 7
 
-  // Phase 3 - Selection/Diversification
-  maxPerToken: 2,               // max pools to pick per reward token
-  maxTotal: 5,                  // max pools to select overall - matches workflow
-  maxPositions: 5               // max active positions
+  // Phase 3 - Selection/Diversification (More opportunities)
+  maxPerToken: 3,               // max pools to pick per reward token (increased from 2)
+  maxTotal: 8,                  // max pools to select overall (increased from 5)
+  maxPositions: 8               // max active positions (increased from 5)
 };
 
 // === Exit Strategy Configuration ===
 export const EXIT_CONFIG = {
-  // APY drop threshold for exit (50%)
-  apyDropThreshold: 0.5,
+  // APY drop threshold for exit (30% for more aggressive farming)
+  apyDropThreshold: 0.3,
   
   // Time-based exit (uses TIMING_CONFIG.holdDurationMs)
   enableTimeBasedExit: true,
@@ -114,9 +114,9 @@ export const EXIT_CONFIG = {
   // Performance-based exit
   enablePerformanceExit: true,
   
-  // Risk-based exit
+  // Risk-based exit (more lenient)
   enableRiskExit: true,
-  maxExitRiskScore: 8
+  maxExitRiskScore: 9
 };
 
 // === Yield Calculation Configuration ===

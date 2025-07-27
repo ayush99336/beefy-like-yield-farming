@@ -8,7 +8,6 @@
     "start": "node workflow_manager_db.js",
     "dev": "node workflow_manager_db.js",
     "server": "node api-server.js",
-    "migrate": "node migrate-data.js",
     "analyze": "node yield-analysis.js",
     "yield": "node yield-analysis.js --summary",
     "db:generate": "npx prisma generate",
@@ -19,7 +18,6 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f postgres",
     "setup": "npm run docker:up && sleep 5 && npm run db:generate && npm run db:push",
-    "dashboard": "npx http-server frontend -p 8080 -c-1",
     "react-dashboard": "cd frontend-react && npm start",
     "build-react": "cd frontend-react && npm run build"
   },
@@ -37,9 +35,6 @@
     "npm": "^11.5.1",
     "prisma": "^6.12.0",
     "undici": "^7.12.0"
-  },
-  "devDependencies": {
-    "http-server": "^14.1.1"
   },
   "keywords": [
     "solana",

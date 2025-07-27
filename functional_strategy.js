@@ -128,15 +128,38 @@ export function validateAndFilterNewPools(detectedPools, allPools, config = defa
     const data = map.get(p.pool) || map.get(p.address);
     if (!data) return;
     
-    if (data.chain !== 'Solana') { reasons.chain++; filtered++; return; }
-    if (data.apy < config.minAPY) { reasons.apy++; filtered++; return; }
-    if (data.tvlUsd < config.minTVL) { reasons.tvl++; filtered++; return; }
+    // Debug logging for pool validation
+    logger.info(`🔍 Validating pool: ${data.symbol || p.pool}`);
+    logger.info(`   APY: ${data.apy}% (min: ${config.minAPY}%)`);
+    logger.info(`   TVL: $${data.tvlUsd?.toLocaleString()} (min: $${config.minTVL.toLocaleString()})`);
+    logger.info(`   Reward APY: ${data.apyReward || 0}% (min: ${config.minRewardAPY}%)`);
+    
+    if (data.chain !== 'Solana') { 
+      logger.info(`    Failed: Wrong chain (${data.chain})`);
+      reasons.chain++; filtered++; return; 
+    }
+    if (data.apy < config.minAPY) { 
+      logger.info(`    Failed: Low APY`);
+      reasons.apy++; filtered++; return; 
+    }
+    if (data.tvlUsd < config.minTVL) { 
+      logger.info(`    Failed: Low TVL`);
+      reasons.tvl++; filtered++; return; 
+    }
 
     const apyReward = data.apyReward || 0;
-    if (apyReward < config.minRewardAPY) { reasons.rewardApy++; filtered++; return; }
+    if (apyReward < config.minRewardAPY) { 
+      logger.info(`    Failed: Low reward APY`);
+      reasons.rewardApy++; filtered++; return; 
+    }
     const rewardRatio = apyReward / Math.max(data.apy, 1);
-    if (rewardRatio < config.minRewardAPYRatio) { reasons.rewardRatio++; filtered++; return; }
+    logger.info(`   Reward Ratio: ${(rewardRatio * 100).toFixed(1)}% (min: ${(config.minRewardAPYRatio * 100)}%)`);
+    if (rewardRatio < config.minRewardAPYRatio) { 
+      logger.info(`    Failed: Low reward ratio`);
+      reasons.rewardRatio++; filtered++; return; 
+    }
 
+    logger.info(`   ✅ Passed validation!`);
     const rewardTokens = Array.isArray(data.rewardTokens) ? data.rewardTokens : [];
     result.push({ ...data, firstSeenAt: p.firstSeenAt, rewardTokens, rewardRatio });
   });
@@ -150,7 +173,7 @@ export function validateAndFilterNewPools(detectedPools, allPools, config = defa
     logger.info(`  • Low reward ratio (<${(config.minRewardAPYRatio * 100)}%): ${reasons.rewardRatio}`);
   }
 
-  logger.info(`✅ ${result.length} pools passed validation`);
+  logger.info(` ${result.length} pools passed validation`);
 
   return result.sort((a, b) => b.apy - a.apy);
 }

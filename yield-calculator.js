@@ -192,7 +192,7 @@ export function calculateRiskAdjustedReturns(yieldData, riskScore) {
  */
 export async function generateYieldAnalytics(positions) {
   try {
-    logger.info('📊 Generating yield analytics...');
+    logger.info(' Generating yield analytics...');
     
     const portfolioYield = await calculatePortfolioYield(positions);
     
