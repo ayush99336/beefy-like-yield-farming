@@ -1,0 +1,61 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model DetectionCycle {
+    id              Int        @id @default(autoincrement())
+    cycleTimestamp  DateTime   @default(now())
+    totalPoolsFound Int
+    newPoolsFound   Int
+    activePositions Int
+    watchlistSize   Int
+    logs            Log[]
+    positions       Position[]
+}
+
+model Position {
+    id              Int            @id @default(autoincrement())
+    poolId          String
+    symbol          String
+    project         String
+    status          String         @default("active") // active, exited
+    entryTimestamp  DateTime       @default(now())
+    entryApy        Float
+    entryRewardApy  Float?
+    entryTvl        Float?
+    entryRiskScore  Int?
+    isNew           Boolean        @default(false)
+    detectionReason String?
+    exitTimestamp   DateTime?
+    exitApy         Float?
+    exitReason      String?
+    profitLoss      Float?
+    detectionCycle  DetectionCycle @relation(fields: [cycleId], references: [id])
+    cycleId         Int
+}
+
+model WatchlistPool {
+    id          Int      @id @default(autoincrement())
+    poolId      String   @unique
+    symbol      String
+    project     String
+    firstSeen   DateTime @default(now())
+    isNew       Boolean  @default(false)
+    lastChecked DateTime @default(now())
+    status      String   @default("watching") // watching, invested, ignored
+}
+
+model Log {
+    id        Int             @id @default(autoincrement())
+    timestamp DateTime        @default(now())
+    level     String          @default("info") // info, warn, error
+    message   String
+    details   Json?
+    cycleId   Int?
+    cycle     DetectionCycle? @relation(fields: [cycleId], references: [id])
+}

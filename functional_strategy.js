@@ -12,31 +12,11 @@
  */
 
 import axios from 'axios';
-import { API_URL } from './config.js';
+import { STRATEGY_CONFIG, TIMING_CONFIG, CONFIG_HELPERS, defaultConfig } from './config.js';
 import logger from './logger.js';
 
 // --- Configuration Defaults ---
-export const defaultConfig = {
-  // Phase 1 - Pool Detection Criteria
-  minAPY: 50,                   // minimum total APY to consider
-  minTVL: 100_000,              // minimum TVL (USD) to consider
-  minRewardAPY: 20,             // minimum absolute reward APY
-  minRewardAPYRatio: 0.5,       // reward APY must be >= 50% of total APY
-  newPoolAgeDays: 7,            // pool age (days) threshold for "new"
-  highAPYThreshold: 200,        // APY above this is flagged as new/very high
-  mediumAPYThreshold: 80,       // medium APY threshold for combined checks
-  lowTVLThreshold: 500_000,     // TVL below this with medium APY flags new
-  highRewardRatioThreshold: 0.8,// reward ratio threshold for new incentive
-  tvlGrowthPctThreshold: 50,    // 1d TVL growth percentage threshold for new
-
-  // Phase 2 - Risk & Analysis Criteria
-  volatilitySigmaThreshold: 2,  // sigma above this adds risk
-  maxRiskScore: 5,              // maximum acceptable risk score (0–10)
-
-  // Phase 3 - Selection/Diversification
-  maxPerToken: 2,               // max pools to pick per reward token
-  maxTotal: 10                  // max pools to select overall
-};
+export { defaultConfig } from './config.js';
 
 // --- Sample Stats Object for Profit Calculation ---
 export const sampleStats = {
@@ -77,6 +57,14 @@ export async function fetchNewIncentivePools(config = defaultConfig) {
   });
 
   logger.info(`Found ${incentivePools.length} Solana incentive-driven pools`);
+  
+  // Log some examples of what we found
+  if (incentivePools.length > 0) {
+    logger.info(`Pool examples:`);
+    incentivePools.slice(0, 3).forEach(pool => {
+      logger.info(`  • ${pool.symbol} (${pool.project}): APY ${pool.apy}%, Reward APY ${pool.apyReward}%, TVL $${pool.tvlUsd?.toLocaleString()}`);
+    });
+  }
 
   const newPools = [];
   const established = [];
@@ -86,20 +74,27 @@ export async function fetchNewIncentivePools(config = defaultConfig) {
     const apyReward = pool.apyReward || 0;
     const rewardRatio = apyReward / Math.max(pool.apy, 1);
 
-    // 1. Age indicator
-    if (pool.firstSeenAt) {
+    // 1. Ultra-fresh window check (1-4 hours)
+    if (CONFIG_HELPERS.isUltraFresh(pool.firstSeenAt)) {
+      isNew = true;
+      logger.info(`Pool ${pool.symbol} flagged as new: Ultra-fresh (${pool.firstSeenAt})`);
+    }
+    
+    // 2. Age indicator (legacy 7-day check)
+    if (pool.firstSeenAt && !isNew) {
       const ageDays = (Date.now() - new Date(pool.firstSeenAt).getTime()) / 86400000;
       if (ageDays < config.newPoolAgeDays) isNew = true;
     }
-    // 2. Very high APY
+    
+    // 3. Very high APY
     if (pool.apy > config.highAPYThreshold) isNew = true;
-    // 3. Low TVL + medium APY
+    // 4. Low TVL + medium APY
     if (pool.tvlUsd < config.lowTVLThreshold && pool.apy > config.mediumAPYThreshold) isNew = true;
-    // 4. High reward ratio
+    // 5. High reward ratio
     if (rewardRatio > config.highRewardRatioThreshold && pool.apy > config.mediumAPYThreshold) isNew = true;
-    // 5. Rapid TVL growth
+    // 6. Rapid TVL growth
     if (pool.tvlGrowthPct1d && pool.tvlGrowthPct1d > config.tvlGrowthPctThreshold) isNew = true;
-    // 6. Keyword indicators
+    // 7. Keyword indicators
     const keywords = ['new', 'launch', 'genesis', 'fresh'];
     if (keywords.some(k => pool.project?.toLowerCase().includes(k) || pool.symbol?.toLowerCase().includes(k))) {
       isNew = true;
@@ -126,20 +121,36 @@ export async function fetchNewIncentivePools(config = defaultConfig) {
 export function validateAndFilterNewPools(detectedPools, allPools, config = defaultConfig) {
   const map = new Map(allPools.map(p => [p.pool, p]));
   const result = [];
+  let filtered = 0;
+  let reasons = { chain: 0, apy: 0, tvl: 0, rewardApy: 0, rewardRatio: 0 };
 
   detectedPools.forEach(p => {
     const data = map.get(p.pool) || map.get(p.address);
     if (!data) return;
-    if (data.chain !== 'Solana' || data.apy < config.minAPY || data.tvlUsd < config.minTVL) return;
+    
+    if (data.chain !== 'Solana') { reasons.chain++; filtered++; return; }
+    if (data.apy < config.minAPY) { reasons.apy++; filtered++; return; }
+    if (data.tvlUsd < config.minTVL) { reasons.tvl++; filtered++; return; }
 
     const apyReward = data.apyReward || 0;
-    if (apyReward < config.minRewardAPY) return;
+    if (apyReward < config.minRewardAPY) { reasons.rewardApy++; filtered++; return; }
     const rewardRatio = apyReward / Math.max(data.apy, 1);
-    if (rewardRatio < config.minRewardAPYRatio) return;
+    if (rewardRatio < config.minRewardAPYRatio) { reasons.rewardRatio++; filtered++; return; }
 
     const rewardTokens = Array.isArray(data.rewardTokens) ? data.rewardTokens : [];
     result.push({ ...data, firstSeenAt: p.firstSeenAt, rewardTokens, rewardRatio });
   });
+
+  if (filtered > 0) {
+    logger.info(`Filtered out ${filtered} pools:`);
+    logger.info(`  • Wrong chain: ${reasons.chain}`);
+    logger.info(`  • Low APY (<${config.minAPY}%): ${reasons.apy}`);
+    logger.info(`  • Low TVL (<$${config.minTVL.toLocaleString()}): ${reasons.tvl}`);
+    logger.info(`  • Low reward APY (<${config.minRewardAPY}%): ${reasons.rewardApy}`);
+    logger.info(`  • Low reward ratio (<${(config.minRewardAPYRatio * 100)}%): ${reasons.rewardRatio}`);
+  }
+
+  logger.info(`✅ ${result.length} pools passed validation`);
 
   return result.sort((a, b) => b.apy - a.apy);
 }

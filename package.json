@@ -1,13 +1,53 @@
 {
+  "name": "wildnet-yield-farming-bot",
+  "version": "1.0.0",
+  "description": "Solana yield farming bot with incentive-driven pool detection",
   "type": "module",
+  "main": "workflow_manager_db.js",
+  "scripts": {
+    "start": "node workflow_manager_db.js",
+    "dev": "node workflow_manager_db.js",
+    "server": "node api-server.js",
+    "migrate": "node migrate-data.js",
+    "analyze": "node yield-analysis.js",
+    "yield": "node yield-analysis.js --summary",
+    "db:generate": "npx prisma generate",
+    "db:push": "npx prisma db push",
+    "db:studio": "npx prisma studio",
+    "db:reset": "npx prisma migrate reset --force",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f postgres",
+    "setup": "npm run docker:up && sleep 5 && npm run db:generate && npm run db:push",
+    "dashboard": "npx http-server frontend -p 8080 -c-1",
+    "react-dashboard": "cd frontend-react && npm start",
+    "build-react": "cd frontend-react && npm run build"
+  },
   "dependencies": {
     "@orca-so/sdk": "^1.2.26",
+    "@prisma/client": "^6.12.0",
     "@solana/web3.js": "^1.98.2",
     "axios": "^1.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
     "fs": "^0.0.1-security",
     "i": "^0.3.7",
     "logger.js": "^0.0.1",
     "npm": "^11.5.1",
+    "prisma": "^6.12.0",
     "undici": "^7.12.0"
-  }
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "keywords": [
+    "solana",
+    "defi",
+    "yield-farming",
+    "blockchain",
+    "crypto"
+  ],
+  "author": "WildNet Team",
+  "license": "MIT"
 }

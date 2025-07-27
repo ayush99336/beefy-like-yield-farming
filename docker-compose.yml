@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: wildnet-postgres
+    environment:
+      POSTGRES_USER: wildnet
+      POSTGRES_PASSWORD: wildnetpassword
+      POSTGRES_DB: wildnet
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: wildnet-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@wildnet.com
+      PGADMIN_DEFAULT_PASSWORD: adminpassword
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
