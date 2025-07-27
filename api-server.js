@@ -111,9 +111,9 @@ const COINGECKO_CONFIG = {
 
 // Advanced caching and rate limiting for CoinGecko API
 let lastApiCall = 0;
-const API_CALL_INTERVAL = 5000; // 5 seconds between calls
+const API_CALL_INTERVAL = 2000; // 2 seconds between calls (less strict)
 const priceCache = new Map();
-const CACHE_DURATION = 120000; // 2 minutes cache
+const CACHE_DURATION = 30000; // 30 seconds cache (much shorter for real-time data)
 const pendingRequests = new Map(); // Request deduplication
 
 // CoinGecko API proxy to avoid CORS issues

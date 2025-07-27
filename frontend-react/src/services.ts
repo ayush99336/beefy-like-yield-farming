@@ -3,10 +3,8 @@ import { Position, PoolData, YieldAnalytics, PRINCIPAL_USD, DAILY_COMPOUND_RATE 
 
 // External API configuration (matches backend config)
 const COINGECKO_CONFIG = {
-  apiKey: process.env.REACT_APP_COINGECKO_API_KEY || '',
-  baseUrl: 'https://api.coingecko.com/api/v3',
-  timeout: 5000,
-  cacheExpiryMs: 60000 // 1 minute cache
+  timeout: 10000,
+  cacheExpiryMs: 20000 // 20 seconds cache (shorter for real-time updates)
 };
 
 // Token mapping for CoinGecko (Solana ecosystem)
@@ -71,7 +69,7 @@ const coinGeckoApi = axios.create({
 // Add request interceptor for debugging
 coinGeckoApi.interceptors.request.use(
   (config) => {
-    console.log('🌐 Backend Proxy Request:', {
+    console.log('Backend Proxy Request:', {
       url: config.url,
       baseURL: config.baseURL,
       params: config.params,
@@ -80,7 +78,7 @@ coinGeckoApi.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('🌐 Backend Proxy Request Error:', error);
+    console.error(' Backend Proxy Request Error:', error);
     return Promise.reject(error);
   }
 );

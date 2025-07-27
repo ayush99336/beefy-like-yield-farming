@@ -20,20 +20,18 @@ const LOG_FILE = 'bot_activity.log';
 function analyzePerformance() {
     console.log('\n=== BOT PERFORMANCE ANALYSIS ===\n');
     
-    // 1. Check if bot is running and files exist
+
     const filesExist = checkRequiredFiles();
     if (!filesExist) return;
     
-    // 2. Analyze portfolio state
+
     const portfolio = analyzePortfolio();
-    
-    // 3. Analyze watchlist
+
     const watchlist = analyzeWatchlist();
     
-    // 4. Check recent activity
+
     analyzeRecentActivity();
     
-    // 5. Provide recommendations
     provideRecommendations(portfolio, watchlist);
 }
 
@@ -178,7 +176,7 @@ function provideRecommendations(portfolio, watchlist) {
         }
     }
     
-    console.log('\n📋 TO VERIFY THE BOT IS SOLVING YOUR PROBLEM:');
+    console.log('TO VERIFY THE BOT IS SOLVING YOUR PROBLEM:');
     console.log('   1. Check that new pools are being added to watchlist regularly');
     console.log('   2. Verify investments are made in incentive-driven pools (high reward APY)');
     console.log('   3. Confirm positions are held for exactly 48 hours');

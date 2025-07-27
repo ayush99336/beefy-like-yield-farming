@@ -38,13 +38,56 @@ const CoinGeckoDataViewer: React.FC = () => {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Tokens from your watchlist - memoized to prevent re-renders
-  const watchlistTokens = React.useMemo(() => 
-    ['WSOL', 'USDT', 'DUCK', 'MEOW', 'FOXSY', 'KRAI', 'COM', 'SOL'], 
-    []
-  );
+  // Extract tokens from real watchlist data
+  const [watchlistData, setWatchlistData] = useState<any[]>([]);
+  const [watchlistTokens, setWatchlistTokens] = useState<string[]>([]);
+
+  // Fetch watchlist data
+  useEffect(() => {
+    const fetchWatchlist = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/watchlist');
+        const data = await response.json();
+        setWatchlistData(data);
+        
+        // Extract unique tokens from pool symbols
+        const allTokens = new Set<string>();
+        data.forEach((item: any) => {
+          const tokens = item.symbol.split('-');
+          tokens.forEach((token: string) => {
+            if (token && token !== 'WSOL' && token !== 'SOL') {
+              allTokens.add(token);
+            }
+          });
+        });
+        
+        // Always include WSOL, SOL, USDT for reference
+        allTokens.add('WSOL');
+        allTokens.add('SOL');
+        allTokens.add('USDT');
+        
+        const tokenArray = Array.from(allTokens);
+        console.log('🎯 Dynamic watchlist tokens:', tokenArray);
+        setWatchlistTokens(tokenArray);
+      } catch (error) {
+        console.error('Failed to fetch watchlist:', error);
+        // Fallback to default tokens
+        setWatchlistTokens(['WSOL', 'SOL', 'USDT', 'DUCK', 'MEOW', 'FOXSY', 'KRAI', 'COM']);
+      }
+    };
+    
+    fetchWatchlist();
+    // Refresh watchlist every 2 minutes
+    const interval = setInterval(fetchWatchlist, 120000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchPrices = useCallback(async () => {
+    if (watchlistTokens.length === 0) {
+      console.log('⏳ Waiting for watchlist tokens to load...');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
@@ -97,8 +140,8 @@ const CoinGeckoDataViewer: React.FC = () => {
 
   useEffect(() => {
     fetchPrices();
-    // Auto-refresh every 2 minutes
-    const interval = setInterval(fetchPrices, 120000);
+    // Auto-refresh every 30 seconds (more frequent for real-time data)
+    const interval = setInterval(fetchPrices, 30000);
     return () => clearInterval(interval);
   }, [fetchPrices]);
 
@@ -122,6 +165,12 @@ const CoinGeckoDataViewer: React.FC = () => {
               <Typography variant="h6" component="h2">
                 Live Token Prices (CoinGecko)
               </Typography>
+              <Chip 
+                label={`${watchlistData.length} pools tracked`} 
+                size="small" 
+                color="info" 
+                sx={{ ml: 2 }} 
+              />
             </Box>
             <Tooltip title="Refresh prices">
               <IconButton onClick={fetchPrices} disabled={loading}>
@@ -129,6 +178,26 @@ const CoinGeckoDataViewer: React.FC = () => {
               </IconButton>
             </Tooltip>
           </Box>
+
+          {/* Watchlist Pools Display */}
+          {watchlistData.length > 0 && (
+            <Box mb={2}>
+              <Typography variant="subtitle2" gutterBottom>
+                Tracked Pools:
+              </Typography>
+              <Box display="flex" flexWrap="wrap" gap={1}>
+                {watchlistData.map((pool) => (
+                  <Chip
+                    key={pool.id}
+                    label={`${pool.symbol} (${pool.project})`}
+                    size="small"
+                    color={pool.isNew ? "success" : "default"}
+                    variant="outlined"
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
 
           {error && (
             <Alert severity="warning" sx={{ mb: 2 }}>

@@ -109,9 +109,11 @@ async function updateWatchlist(cycleId) {
     const existingWatchlist = await dbService.getWatchlist();
     const existingIds = new Set(existingWatchlist.map(p => p.poolId));
     let added = 0;
+    let updated = 0;
 
     for (const pool of detected.slice(0, 15)) { // Top 15 new pools
       if (!existingIds.has(pool.pool)) {
+        // Add new pool
         await dbService.addToWatchlist({
           poolId: pool.pool,
           symbol: pool.symbol,
@@ -119,6 +121,10 @@ async function updateWatchlist(cycleId) {
           isNew: pool.isNew || false
         });
         added++;
+      } else {
+        // Update existing pool's lastChecked timestamp
+        await dbService.updateWatchlistStatus(pool.pool, 'watching');
+        updated++;
       }
     }
 
@@ -130,12 +136,17 @@ async function updateWatchlist(cycleId) {
       await dbService.addLog(cycleId, 'info', `Added ${added} new pools to watchlist`);
     }
     
+    if (updated > 0) {
+      logger.info(`🔄 Updated ${updated} existing pools in watchlist`);
+      await dbService.addLog(cycleId, 'info', `Updated ${updated} existing pools lastChecked timestamp`);
+    }
+    
     if (cleaned > 0) {
       logger.info(`🧹 Cleaned ${cleaned} old watchlist entries`);
       await dbService.addLog(cycleId, 'info', `Cleaned ${cleaned} old watchlist entries`);
     }
     
-    return { added, cleaned };
+    return { added, updated, cleaned };
   } catch (error) {
     logger.error(`Error updating watchlist: ${error.message}`);
     await dbService.addLog(cycleId, 'error', `Error updating watchlist: ${error.message}`);
